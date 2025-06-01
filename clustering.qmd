@@ -22,66 +22,65 @@ In the previous session, we introduced the key preparatory steps for typology co
 
 -   **Define your variables**:
 
-  `impervious` – percentage of impervious surface, such as roads, squares and buildings; related to runoff and water management, may require rain gardens or permeable pavement.
+`impervious` – percentage of impervious surface, such as roads, squares and buildings; related to run-off and water management, may require rain gardens or permeable pavement.
 
-  `slope` – mean terrain slope (degrees); related to erosion and stability, may require slope planting or retaining walls.
+`slope` – mean terrain slope (degrees); related to erosion and stability, may require slope planting or retaining walls.
 
-  `crossing` – the number of points where roads or railways cross a stream, calculated per 100 meters of stream length; related to ecological connectivity, may require ecological bridges.
+`crossing` – the number of points where roads or railways cross a stream, calculated per 100 meters of stream length; related to ecological connectivity, may require ecological bridges.
 
 -   **Prepare geometries of spatial unit covering focused area**:\
-    Ready in `grids_TC.gpkg`, with a column `grid_id` created.
+    Read in `grids_TC.gpkg`, with a column `grid_id` created.
 
 -   **Calculate the value of variables in each spatial unit**:\
-    Ready in `grids_TC.gpkg`, with columns `impervious`, `slope`, `crossing` created.
+    Read in `grids_TC.gpkg`, with columns `impervious`, `slope`, `crossing` created.
 
 # Clustering steps
 
 After the above preparatory steps, now we start the clustering process.
 
-We will: \
+We will:\
 Step 1. Load R packages and data\
 Step 2. Standardizations\
 Step 3. Determine optimal k\
 Step 4. Run K-means clustering\
-Step 5. Interpret cluster center
+Step 5. Interpret cluster center\
 Step 6. (Optional) Calculate distance to cluster center
-
 
 ## Step 1. Load R packages and data
 
 We begin by loading the necessary R packages.
 
-If you haven't installed these libraries yet, run the following chunk before continuing:
+If you haven't installed these packages yet, remove the `#` and run the following chunk before continuing:
 
 ```{r}
 #install.packages("sf") 
 #install.packages("dplyr")
 ```
 
-_Note: adding \# at the beginning if you don’t want to run that line_
+::: callout-note
+`#` at the beginning of a line of code will prevent that line from being executed. We use it here because we only need to run `install.packages()` once, when we install a package for the first time. After that we disable that line because we do not need to run it anymore.
+:::
 
-
-Next, load the required libraries:
+Next, load the required packages:
 
 ```{r}
 library(sf) # for processing vector data 
 library(dplyr) # for selecting and transforming data
 ```
 
-We first need to set and confirm the working directory. Make sure you copied the prepared grid_TC.gpkg in your working directory folder. Now we read the dataset from a GeoPackage file and display the first few rows using head():
+We first need to confirm that the project folder is an RStudio project. This will ensure that the working directory points to the project folder. You can confirm this with `getwd()`. Make sure you copied the prepared `grid_TC.gpkg` in the root of your working directory folder. Now we read the dataset from a GeoPackage file and display the first few rows using head():
 
 ```{r}
-#setwd("/.../clustering") # change the path to your own folder
 #getwd()
 grids <- st_read("grids_TC.gpkg", quiet = TRUE)
+
+# View the first few rows of the data
+head(grids)
 ```
 
 We can check how many girds in the file.
 
 ```{r}
-# View the first few rows of the data
-head(grids)
-
 # Count how many grid units we have
 nrow(grids)
 ```
@@ -100,16 +99,17 @@ plot(grids["crossing"],  border = NA,
      #breaks = "quantile", 
      main = "Transport-Stream Crossing counts")
 ```
-
-*Note: By default, plot() is using equal interval, which might make the differences hard to see. You can change the `breaks` type to show the visual difference more clearly.*
+::: callout-note
+By default, `plot()` is using equal interval, which might make the differences hard to see. You can change the `breaks` type to show the visual difference more clearly.
+:::
 
 ## Step 2. Standardization
 
 We select the relevant features. These features are then standardized to ensure they contribute equally to the clustering algorithm.
 
 ```{r}
-features <- grids %>%
-  select(impervious, slope, crossing) %>%
+features <- grids |>
+  select(impervious, slope, crossing) |>
   st_drop_geometry() # remove geometry column so we just keep a data table
 
 X_scaled <- scale(features) # Standardize (mean=0, sd=1) 
@@ -117,15 +117,15 @@ X_scaled <- scale(features) # Standardize (mean=0, sd=1)
 head(X_scaled)
 ```
 
-_Note: Even after selecting variables from an `sf` object, the geometry column is still there. Use `st_drop_geometry()` to remove it before applying functions like `scale()`._
-
+::: callout-note
+Even after selecting variables from an `sf` object, the geometry column is still there. Use `st_drop_geometry()` to remove it before applying functions like `scale()`.
+:::
 
 ## Step 3: Determine the optimal K
 
 We use the **elbow method** to choose a good number of clusters.
 
 For each value of `k` (e.g. 2 to 9), we run K-means and record a value called **inertia** : the total distance between points and their cluster centers. Lower inertia means tighter (better) clusters.
-
 
 ```{r}
 # Initialize an empty vector to store inertia values 
@@ -146,10 +146,10 @@ for (k in k_values) {
 elbow_df <- data.frame(k = k_values, inertia = inertia)
 
 print(elbow_df)
-
 ```
-
-*Note: We suggest using a larger `nstart` value, such as 20 or 50, to get more reliable results. Setting `nstart = 20` makes R try 20 different starting points and choose the one with the lowest `tot.withinss`. The `tot.withinss` value measures how close points are to their cluster centers. Lower values mean better clustering.*
+::: callout-note
+We suggest using a larger `nstart` value, such as 20 or 50, to get more reliable results. Setting `nstart = 20` makes R try 20 different starting points and choose the one with the lowest `tot.withinss`. The `tot.withinss` value measures how close points are to their cluster centers. Lower values mean better clustering.
+:::
 
 We can visualize how inertia changes with increasing k. After a certain point, adding more clusters doesn’t help much — the curve bends. That bend is called the *elbow point*, and we use it to choose the best k.
 
@@ -163,7 +163,7 @@ plot(k_values, inertia,
 
 ## Step 4. Run K-Means clustering
 
-Based on the elbow plot, we choose `k = 4` as a good number of clusters.\
+Based on the elbow plot, we choose `k = 4` as a good number of clusters.  
 We now run the K-means algorithm and assign each grid to one of the four clusters.
 
 ```{r}
@@ -183,14 +183,12 @@ head(grids)
 
 # Show how many grids fall into each cluster
 print(table(grids$cluster))
-
 ```
 
 Save the updated grid data (with cluster labels) to a new GeoPackage file. You can use it for further analysis and visualize.
 
 ```{r}
 #st_write(grids, "grids_cluster.gpkg")
-
 ```
 
 We can also visualize the spatial pattern.
@@ -231,8 +229,8 @@ To interpret the clustering results, we examine the centroids of each cluster in
 
 ### Typology description
 
-| Typology | Impervious | Slope (°) | Crossing | Description |
-|--------------|--------------|--------------|--------------|-----------------|
+| Type | Impervious | Slope (°) | Crossing | Description |
+|---------------|---------------|---------------|---------------|---------------|
 | 1 | 0.76 | 6.2 | 0.67 | Urban area with high imperviousness and moderate road impact |
 | 2 | 0.07 | 19.4 | 0.29 | Steep natural area with minimal development |
 | 3 | 0.04 | 5.4 | 0.36 | Flat and near-natural stream surroundings |
