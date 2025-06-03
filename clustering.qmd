@@ -40,7 +40,7 @@ After the above preparatory steps, now we start the clustering process.
 
 We will:\
 Step 1. Load R packages and data\
-Step 2. Standardizations\
+Step 2. Standardization\
 Step 3. Determine optimal k\
 Step 4. Run K-means clustering\
 Step 5. Interpret cluster center\
@@ -58,7 +58,7 @@ If you haven't installed these packages yet, remove the `#` and run the followin
 ```
 
 ::: callout-note
-`#` at the beginning of a line of code will prevent that line from being executed. We use it here because we only need to run `install.packages()` once, when we install a package for the first time. After that we disable that line because we do not need to run it anymore.
+Adding `#` at the beginning of a line of code will prevent that line from being executed. We use it here because we only need to run `install.packages()` once, when we install a package for the first time. After that we disable that line because we do not need to run it anymore.
 :::
 
 Next, load the required packages:
@@ -99,6 +99,7 @@ plot(grids["crossing"],  border = NA,
      #breaks = "quantile", 
      main = "Transport-Stream Crossing counts")
 ```
+
 ::: callout-note
 By default, `plot()` is using equal interval, which might make the differences hard to see. You can change the `breaks` type to show the visual difference more clearly.
 :::
@@ -108,7 +109,7 @@ By default, `plot()` is using equal interval, which might make the differences h
 We select the relevant features. These features are then standardized to ensure they contribute equally to the clustering algorithm.
 
 ```{r}
-features <- grids |>
+features <- grids |> 
   select(impervious, slope, crossing) |>
   st_drop_geometry() # remove geometry column so we just keep a data table
 
@@ -118,6 +119,8 @@ head(X_scaled)
 ```
 
 ::: callout-note
+`|>` passes the result from the left expression to the right function.
+
 Even after selecting variables from an `sf` object, the geometry column is still there. Use `st_drop_geometry()` to remove it before applying functions like `scale()`.
 :::
 
@@ -128,7 +131,7 @@ We use the **elbow method** to choose a good number of clusters.
 For each value of `k` (e.g. 2 to 9), we run K-means and record a value called **inertia** : the total distance between points and their cluster centers. Lower inertia means tighter (better) clusters.
 
 ```{r}
-# Initialize an empty vector to store inertia values 
+# Initialize an empty numeric vector to store inertia values 
 inertia <- numeric()
 
 # Try k values from 2 to 9
@@ -138,7 +141,8 @@ k_values <- 2:9
 for (k in k_values) {
   km <- kmeans(X_scaled, centers = k, nstart = 20) 
   
-  # This measures how compact the clusters are: lower is better
+  # tot.withinss is Total within-cluster sum of squares
+  # This measures how compact the clusters are: lower is better.
   inertia <- c(inertia, km$tot.withinss)
 }
 
@@ -147,6 +151,7 @@ elbow_df <- data.frame(k = k_values, inertia = inertia)
 
 print(elbow_df)
 ```
+
 ::: callout-note
 We suggest using a larger `nstart` value, such as 20 or 50, to get more reliable results. Setting `nstart = 20` makes R try 20 different starting points and choose the one with the lowest `tot.withinss`. The `tot.withinss` value measures how close points are to their cluster centers. Lower values mean better clustering.
 :::
@@ -156,17 +161,18 @@ We can visualize how inertia changes with increasing k. After a certain point, a
 ```{r}
 # Make the elbow plot
 plot(k_values, inertia,
-     type = "b",                  # solid circle points
+     type = "b",                  # shown both points + lines 
      col = "darkblue",
      main = "Elbow Method")
 ```
 
 ## Step 4. Run K-Means clustering
 
-Based on the elbow plot, we choose `k = 4` as a good number of clusters.  
+Based on the elbow plot, we choose `k = 4` as a good number of clusters.\
 We now run the K-means algorithm and assign each grid to one of the four clusters.
 
 ```{r}
+# `set.seed()` sets the random number generator to a fixed state
 # Set the seed so the clustering result is always the same when re-run
 set.seed(0)  # The number 0 is just a fixed choice. You can also use 10, 345, etc.
 
@@ -206,32 +212,31 @@ Now we look at the center of each cluster. First, we check the values in standar
 
 ```{r}
 # Get the cluster centers (in standardized form)
-scaled_centroids <- kmeans_result$centers
+scaled_centers <- kmeans_result$centers
 
 # Print them
 print("Cluster centers (standardized):")
-print(scaled_centroids)
+print(scaled_centers)
 
 # Convert the centers back to original scale: x * SD + mean
-original_centroids <- t(apply(
-  scaled_centroids, 1, 
+original_centers <- t(apply(
+  scaled_centers, 1, 
   function(x) x * attr(X_scaled, "scaled:scale") + attr(X_scaled, "scaled:center")
 ))
 
 # Print the real-world values
 print("Cluster centers (original):")
-print(original_centroids)
-# st_write(grids, "grids_cluster_distance.gpkg")
+print(original_centers)
 
 ```
 
-To interpret the clustering results, we examine the centroids of each cluster in the original data scale. The table below summarizes the environmental characteristics of each cluster based on the original (unscaled) values.
+To interpret the clustering results, we examine the centers of each cluster in the original data scale. The table below summarizes the environmental characteristics of each cluster based on the original (unscaled) values.
 
 ### Typology description
 
 | Type | Impervious | Slope (°) | Crossing | Description |
 |---------------|---------------|---------------|---------------|---------------|
-| 1 | 0.76 | 6.2 | 0.67 | Urban area with high imperviousness and moderate road impact |
+| 1 | 0.76 | 6.2 | 0.67 | Urban area with high imperviousness and moderate traffic impact |
 | 2 | 0.07 | 19.4 | 0.29 | Steep natural area with minimal development |
 | 3 | 0.04 | 5.4 | 0.36 | Flat and near-natural stream surroundings |
 | 4 | 0.57 | 6.4 | 3.88 | Urban stream corridor with high crossing disturbance |
@@ -239,7 +244,7 @@ To interpret the clustering results, we examine the centroids of each cluster in
 ## Step 6. (Optional) Calculate distance to cluster center
 
 ```{r}
-## Step 7 (Optional): Compute distance to cluster center
+## Step 6 (Optional): Compute distance to cluster center
 
 # Get the cluster center for each row, using the cluster assignment
 centroids_matrix <- kmeans_result$centers[kmeans_result$cluster, ]
