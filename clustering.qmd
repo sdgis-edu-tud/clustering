@@ -2,7 +2,6 @@
 title: "Typology construction using K-means clustering in R"
 format: html
 ---
-* update and commit
 # Introduction
 
 This tutorial demonstrates how to construct urban typologies in R. Specifically, we use K-means Clustering, a method of unsupervised machine learning, to classify urban units into typologies for urban stream restoration.
