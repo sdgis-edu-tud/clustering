@@ -4,11 +4,11 @@ format: html
 ---
 # Introduction
 
-This tutorial demonstrates how to construct urban typologies in R. Specifically, we use K-means Clustering, a method of unsupervised machine learning, to classify urban units into typologies for urban stream restoration.
+This tutorial demonstrates how to construct urban typologies in R. Specifically, we use K-means Clustering, a method of unsupervised machine learning, to classify urban areas into typologies.
 
 ## Preparation
 
-In the previous session, we introduced the key preparatory steps for typology construction before clustering. Here, we provide a specific example that illustrates how these steps can be applied in a particular context.
+In the previous session, we introduced the key preparatory steps for typology construction before clustering. Here, we provide a specific example that illustrates how these steps can be applied in a particular context. This example shows the development of urban stream typologies to identify types of urban stream corridors suitable for different restoration strategies.
 
 -   **Define your objective**:\
     To identify urban stream typologies in areas directly adjacent to stream corridors, where local conditions affect stream ecology and guide restoration design strategies.
@@ -234,7 +234,7 @@ To interpret the clustering results, we examine the centers of each cluster in t
 ### Typology description
 
 | Type | Impervious | Slope (°) | Crossing | Description |
-|---------|----------|---------|----------|--------------------|
+|---------------|---------------|---------------|---------------|---------------|
 | 1 | 0.76 | 6.2 | 0.67 | Urban area with high imperviousness and moderate traffic impact |
 | 2 | 0.07 | 19.4 | 0.29 | Steep natural area with minimal development |
 | 3 | 0.04 | 5.4 | 0.36 | Flat and near-natural stream surroundings |
